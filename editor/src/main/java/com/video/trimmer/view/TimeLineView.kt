@@ -61,44 +61,42 @@ class TimeLineView @JvmOverloads constructor(
                             0,
                             MediaMetadataRetriever.OPTION_CLOSEST_SYNC
                         )
-
-                        if (initialBitmap != null) {
-                            val frameWidth =
-                                ((initialBitmap.width.toFloat() / initialBitmap.height.toFloat()) * frameHeight.toFloat()).toInt()
-                            var numThumbs = ceil((viewWidth.toFloat() / frameWidth)).toInt()
-                            if (numThumbs < threshold) numThumbs = threshold
-                            val cropWidth = viewWidth / threshold
-                            val interval = videoLengthInMs / numThumbs
-                            for (i in 0 until numThumbs) {
-                                var bitmap = mediaMetadataRetriever.getFrameAtTime(
-                                    i * interval,
-                                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC
-                                )
-                                if (bitmap != null) {
-                                    try {
-                                        bitmap = Bitmap.createScaledBitmap(
+                        val frameWidth =
+                            ((initialBitmap!!.width.toFloat() / initialBitmap!!.height.toFloat()) * frameHeight.toFloat()).toInt()
+                        var numThumbs = ceil((viewWidth.toFloat() / frameWidth)).toInt()
+                        if (numThumbs < threshold) numThumbs = threshold
+                        val cropWidth = viewWidth / threshold
+                        val interval = videoLengthInMs / numThumbs
+                        for (i in 0 until numThumbs) {
+                            var bitmap = mediaMetadataRetriever.getFrameAtTime(
+                                i * interval,
+                                MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                            )
+                            if (bitmap != null) {
+                                try {
+                                    bitmap = Bitmap.createScaledBitmap(
+                                        bitmap,
+                                        frameWidth,
+                                        frameHeight,
+                                        false
+                                    )
+                                    bitmap =
+                                        Bitmap.createBitmap(
                                             bitmap,
-                                            frameWidth,
-                                            frameHeight,
-                                            false
+                                            0,
+                                            0,
+                                            cropWidth,
+                                            bitmap.height
                                         )
-                                        bitmap =
-                                            Bitmap.createBitmap(
-                                                bitmap,
-                                                0,
-                                                0,
-                                                cropWidth,
-                                                bitmap.height
-                                            )
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                    thumbnailList.put(i.toLong(), bitmap)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
+                                thumbnailList.put(i.toLong(), bitmap)
                             }
-                            mediaMetadataRetriever.release()
-                            returnBitmaps(thumbnailList)
                         }
+
+                        mediaMetadataRetriever.release()
+                        returnBitmaps(thumbnailList)
                     }
                 } catch (e: Throwable) {
                     Thread.getDefaultUncaughtExceptionHandler()
