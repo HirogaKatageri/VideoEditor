@@ -1,1 +1,1 @@
-include ':video-editor', ':sample-app'
+include ':editor', ':sample-app'
