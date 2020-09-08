@@ -48,49 +48,57 @@ class TimeLineView @JvmOverloads constructor(
         BackgroundExecutor.execute(object : BackgroundExecutor.Task("", 0L, "") {
             override fun execute() {
                 try {
-                    val threshold = 11
-                    val thumbnailList = LongSparseArray<Bitmap>()
-                    val mediaMetadataRetriever = MediaMetadataRetriever()
-                    mediaMetadataRetriever.setDataSource(context, mVideoUri)
-                    val videoLengthInMs = (Integer.parseInt(
-                        mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                    ) * 1000).toLong()
-                    val frameHeight = mHeightView
-                    val initialBitmap = mediaMetadataRetriever.getFrameAtTime(
-                        0,
-                        MediaMetadataRetriever.OPTION_CLOSEST_SYNC
-                    )
+                    if (mVideoUri != null) {
+                        val threshold = 11
+                        val thumbnailList = LongSparseArray<Bitmap>()
+                        val mediaMetadataRetriever = MediaMetadataRetriever()
+                        mediaMetadataRetriever.setDataSource(context, mVideoUri)
+                        val videoLengthInMs = (Integer.parseInt(
+                            mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                        ) * 1000).toLong()
+                        val frameHeight = mHeightView
+                        val initialBitmap = mediaMetadataRetriever.getFrameAtTime(
+                            0,
+                            MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                        )
 
-                    if (initialBitmap != null) {
-                        val frameWidth =
-                            ((initialBitmap.width.toFloat() / initialBitmap.height.toFloat()) * frameHeight.toFloat()).toInt()
-                        var numThumbs = ceil((viewWidth.toFloat() / frameWidth)).toInt()
-                        if (numThumbs < threshold) numThumbs = threshold
-                        val cropWidth = viewWidth / threshold
-                        val interval = videoLengthInMs / numThumbs
-                        for (i in 0 until numThumbs) {
-                            var bitmap = mediaMetadataRetriever.getFrameAtTime(
-                                i * interval,
-                                MediaMetadataRetriever.OPTION_CLOSEST_SYNC
-                            )
-                            if (bitmap != null) {
-                                try {
-                                    bitmap = Bitmap.createScaledBitmap(
-                                        bitmap,
-                                        frameWidth,
-                                        frameHeight,
-                                        false
-                                    )
-                                    bitmap =
-                                        Bitmap.createBitmap(bitmap, 0, 0, cropWidth, bitmap.height)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                        if (initialBitmap != null) {
+                            val frameWidth =
+                                ((initialBitmap.width.toFloat() / initialBitmap.height.toFloat()) * frameHeight.toFloat()).toInt()
+                            var numThumbs = ceil((viewWidth.toFloat() / frameWidth)).toInt()
+                            if (numThumbs < threshold) numThumbs = threshold
+                            val cropWidth = viewWidth / threshold
+                            val interval = videoLengthInMs / numThumbs
+                            for (i in 0 until numThumbs) {
+                                var bitmap = mediaMetadataRetriever.getFrameAtTime(
+                                    i * interval,
+                                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                                )
+                                if (bitmap != null) {
+                                    try {
+                                        bitmap = Bitmap.createScaledBitmap(
+                                            bitmap,
+                                            frameWidth,
+                                            frameHeight,
+                                            false
+                                        )
+                                        bitmap =
+                                            Bitmap.createBitmap(
+                                                bitmap,
+                                                0,
+                                                0,
+                                                cropWidth,
+                                                bitmap.height
+                                            )
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                    thumbnailList.put(i.toLong(), bitmap)
                                 }
-                                thumbnailList.put(i.toLong(), bitmap)
                             }
+                            mediaMetadataRetriever.release()
+                            returnBitmaps(thumbnailList)
                         }
-                        mediaMetadataRetriever.release()
-                        returnBitmaps(thumbnailList)
                     }
                 } catch (e: Throwable) {
                     Thread.getDefaultUncaughtExceptionHandler()
