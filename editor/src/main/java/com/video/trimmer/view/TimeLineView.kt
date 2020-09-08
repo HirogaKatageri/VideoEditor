@@ -22,6 +22,7 @@ class TimeLineView @JvmOverloads constructor(
     private var mVideoUri: Uri? = null
     private var mHeightView: Int = 0
     private var mBitmapList: LongSparseArray<Bitmap>? = null
+    private var _width: Int = 0
 
     init {
         init()
@@ -41,10 +42,13 @@ class TimeLineView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldW: Int, oldH: Int) {
         super.onSizeChanged(w, h, oldW, oldH)
-        getBitmap(w)
+        if (w != oldW) {
+            _width = w
+            getBitmap(w)
+        }
     }
 
-    private fun getBitmap(viewWidth: Int) {
+    private fun getBitmap(viewWidth: Int = _width) {
         BackgroundExecutor.execute(object : BackgroundExecutor.Task("", 0L, "") {
             override fun execute() {
                 try {
@@ -130,6 +134,6 @@ class TimeLineView @JvmOverloads constructor(
 
     fun setVideo(data: Uri) {
         mVideoUri = data
-        invalidate()
+        getBitmap()
     }
 }
