@@ -41,7 +41,7 @@ class TimeLineView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldW: Int, oldH: Int) {
         super.onSizeChanged(w, h, oldW, oldH)
-        if (w != oldW) getBitmap(w)
+        getBitmap(w)
     }
 
     private fun getBitmap(viewWidth: Int) {
