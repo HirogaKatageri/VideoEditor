@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
+import android.media.MediaMetadataRetriever.METADATA_KEY_DURATION
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Environment
@@ -30,7 +31,11 @@ import java.lang.ref.WeakReference
 import java.util.*
 
 
-class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int = 0) : FrameLayout(context, attrs, defStyleAttr) {
+class VideoTrimmer @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet,
+    defStyleAttr: Int = 0
+) : FrameLayout(context, attrs, defStyleAttr) {
 
     private lateinit var mSrc: Uri
     private var mFinalPath: String? = null
@@ -80,12 +85,13 @@ class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeS
             }
         })
 
-        val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                onClickVideoPlayPause()
-                return true
-            }
-        })
+        val gestureDetector =
+            GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                    onClickVideoPlayPause()
+                    return true
+                }
+            })
 
         video_loader.setOnErrorListener { _, what, _ ->
             mOnTrimVideoListener?.onError("Something went wrong reason : $what")
@@ -168,6 +174,37 @@ class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeS
         timeLineView.layoutParams = lp
     }
 
+    fun onSaveClicked(context: Context) {
+        mOnTrimVideoListener?.onTrimStarted()
+        icon_video_play.visibility = View.VISIBLE
+        video_loader.pause()
+
+        val metadataRetriever = MediaMetadataRetriever().apply {
+            setDataSource(context, mSrc)
+        }
+
+        val metaDuration: Long = metadataRetriever.extractMetadata(METADATA_KEY_DURATION)?.toLong()!!
+
+        val sourceFile = File(mSrc.path)
+
+        if (mTimeVideo < MIN_TIME_FRAME) {
+            if (metaDuration - mEndPosition > MIN_TIME_FRAME - mTimeVideo) mEndPosition += MIN_TIME_FRAME - mTimeVideo
+            else if (mStartPosition > MIN_TIME_FRAME - mTimeVideo) mStartPosition -= MIN_TIME_FRAME - mTimeVideo
+        }
+
+        val outputFile = File(context.filesDir, "output.mp4")
+
+        VideoOptions(context).trimVideo(
+            TrimVideoUtils.stringForTime(mStartPosition),
+            TrimVideoUtils.stringForTime(mEndPosition),
+            sourceFile.path,
+            context.filesDir.path,
+            Uri.fromFile(outputFile),
+            mOnTrimVideoListener
+        )
+    }
+
+    @Deprecated("")
     fun onSaveClicked() {
         mOnTrimVideoListener?.onTrimStarted()
         icon_video_play.visibility = View.VISIBLE
@@ -175,7 +212,8 @@ class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeS
 
         val mediaMetadataRetriever = MediaMetadataRetriever()
         mediaMetadataRetriever.setDataSource(context, mSrc)
-        val metaDataKeyDuration = java.lang.Long.parseLong(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION))
+        val metaDataKeyDuration =
+            java.lang.Long.parseLong(mediaMetadataRetriever.extractMetadata(METADATA_KEY_DURATION))
 
         val file = File(mSrc.path ?: "")
 
@@ -186,9 +224,19 @@ class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeS
 
         val root = File(destinationPath)
         root.mkdirs()
-        val outputFileUri = Uri.fromFile(File(root, "t_${Calendar.getInstance().timeInMillis}_" + file.nameWithoutExtension + ".mp4"))
+        val outputFileUri = Uri.fromFile(
+            File(
+                root,
+                "t_${Calendar.getInstance().timeInMillis}_" + file.nameWithoutExtension + ".mp4"
+            )
+        )
         val outPutPath = RealPathUtil.realPathFromUriApi19(context, outputFileUri)
-                ?: File(root, "t_${Calendar.getInstance().timeInMillis}_" + mSrc.path?.substring(mSrc.path!!.lastIndexOf("/") + 1)).absolutePath
+            ?: File(
+                root,
+                "t_${Calendar.getInstance().timeInMillis}_" + mSrc.path?.substring(
+                    mSrc.path!!.lastIndexOf("/") + 1
+                )
+            ).absolutePath
         Log.e("SOURCE", file.path)
         Log.e("DESTINATION", outPutPath)
         val extractor = MediaExtractor()
@@ -210,10 +258,18 @@ class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeS
         } finally {
             extractor.release()
         }
-        val duration = java.lang.Long.parseLong(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION))
+        val duration =
+            java.lang.Long.parseLong(mediaMetadataRetriever.extractMetadata(METADATA_KEY_DURATION))
         Log.e("FRAME RATE", frameRate.toString())
         Log.e("FRAME COUNT", (duration / 1000 * frameRate).toString())
-        VideoOptions(context).trimVideo(TrimVideoUtils.stringForTime(mStartPosition), TrimVideoUtils.stringForTime(mEndPosition), file.path, outPutPath, outputFileUri, mOnTrimVideoListener)
+        VideoOptions(context).trimVideo(
+            TrimVideoUtils.stringForTime(mStartPosition),
+            TrimVideoUtils.stringForTime(mEndPosition),
+            file.path,
+            outPutPath,
+            outputFileUri,
+            mOnTrimVideoListener
+        )
     }
 
     private fun onClickVideoPlayPause() {
@@ -291,7 +347,13 @@ class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     private fun setTimeFrames() {
         val seconds = context.getString(R.string.short_seconds)
-        textTimeSelection.text = String.format("%s %s - %s %s", TrimVideoUtils.stringForTime(mStartPosition), seconds, TrimVideoUtils.stringForTime(mEndPosition), seconds)
+        textTimeSelection.text = String.format(
+            "%s %s - %s %s",
+            TrimVideoUtils.stringForTime(mStartPosition),
+            seconds,
+            TrimVideoUtils.stringForTime(mEndPosition),
+            seconds
+        )
     }
 
     private fun onSeekThumbs(index: Int, value: Float) {
@@ -326,7 +388,11 @@ class VideoTrimmer @JvmOverloads constructor(context: Context, attrs: AttributeS
                 item.updateProgress(position.toFloat(), mDuration, (position * 100 / mDuration))
             }
         } else {
-            mListeners[0].updateProgress(position.toFloat(), mDuration, (position * 100 / mDuration))
+            mListeners[0].updateProgress(
+                position.toFloat(),
+                mDuration,
+                (position * 100 / mDuration)
+            )
         }
     }
 
