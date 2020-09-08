@@ -132,5 +132,6 @@ class TimeLineView @JvmOverloads constructor(
 
     fun setVideo(data: Uri) {
         mVideoUri = data
+        invalidate()
     }
 }
