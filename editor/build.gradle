@@ -27,7 +27,7 @@ dependencies {
     implementation 'org.jetbrains.anko:anko-sqlite:0.10.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.1.1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.writingminds:FFmpegAndroid:0.3.2'
+    implementation 'com.arthenica:mobile-ffmpeg-min:4.4.LTS'
     implementation 'com.theartofdev.edmodo:android-image-cropper:2.8.0'
 }
 repositories {

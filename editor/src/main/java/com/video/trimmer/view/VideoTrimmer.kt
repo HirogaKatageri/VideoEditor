@@ -198,7 +198,7 @@ class VideoTrimmer @JvmOverloads constructor(
             TrimVideoUtils.stringForTime(mStartPosition),
             TrimVideoUtils.stringForTime(mEndPosition),
             sourceFile.path,
-            context.filesDir.path,
+            outputFile.absolutePath,
             Uri.fromFile(outputFile),
             mOnTrimVideoListener
         )
